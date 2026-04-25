@@ -9,8 +9,8 @@ jobs:
     steps:
       - name: Download from your Release
         run: |
-          # Tải file từ chính Release v1 bồ vừa tạo
-          curl -L "https://github.com{{ github.repository }}/releases/download/v1/Dopamine.tipa" -o original.tipa
+          # Tớ đã điền link trực tiếp đến Repo của bồ để tránh lỗi ngoặc nhọn
+          curl -L "https://github.com" -o original.tipa
           ls -lh original.tipa
 
       - name: Patching Stealth Info
@@ -19,14 +19,10 @@ jobs:
           APP_PATH=$(find temp/Payload -name "*.app" -type d | head -n 1)
           INFO_PLIST="$APP_PATH/Info.plist"
           
-          # 1. Đổi tên thành System Health
+          # Đổi tên và ID ẩn danh
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
           plutil -replace CFBundleName -string "System Health" "$INFO_PLIST"
-          
-          # 2. Đổi ID thành com.apple để ẩn danh
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.health-check" "$INFO_PLIST"
-          
-          # 3. Đổi Version (đánh lừa app soi)
           plutil -replace CFBundleShortVersionString -string "16.7.10" "$INFO_PLIST"
           
           cd temp && zip -qr ../SystemHealth_Fixed.tipa Payload
