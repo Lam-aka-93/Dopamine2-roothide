@@ -1,4 +1,4 @@
-name: "Dopamine-Deep-Stealth-Patcher"
+name: "System-Health-Deep-Stealth-Final"
 
 on:
   workflow_dispatch:
@@ -7,44 +7,65 @@ jobs:
   patch:
     runs-on: macos-14
     steps:
-      - name: Download Original 2.4.9.24
+      - name: Download Original TIPA
         run: |
-          # Tải bản gốc xịn nhất từ Release bồ đã upload (v1)
+          # Tải bản 52MB từ Release v1 bồ đã upload
           gh release download v1 -p "Dopamine.tipa" --repo ${{ github.repository }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Deep Patching (Sửa nhân, không cần build)
+      - name: Hardcore Stealth & Icon Removal
         run: |
-          unzip -q Dopamine.tipa -d temp
-          APP_PATH=$(find temp/Payload -name "*.app" -type d | head -n 1)
+          set -x
+          # Giải nén vào thư mục tạm
+          mkdir -p tipa_temp
+          unzip -q Dopamine.tipa -d tipa_temp
+          
+          APP_PATH=$(find tipa_temp/Payload -name "*.app" -type d | head -n 1)
           INFO_PLIST="$APP_PATH/Info.plist"
           
-          # 1. Đổi Bundle ID sang com.apple.kernel.health-check
-          plutil -replace CFBundleIdentifier -string "com.apple.kernel.health-check" "$INFO_PLIST"
+          echo "=== STEALTH MODE: Modifying to Apple System App ==="
           
-          # 2. Đổi Binary Name (Tên file thực thi bên trong)
-          # Đổi tên file vật lý trước
-          mv "$APP_PATH/Dopamine" "$APP_PATH/SystemHealth"
-          # Cập nhật vào Info.plist để app biết file chạy tên gì
-          plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
+          # 1. XÓA ICON (Theo đúng logic bản cũ bồ gửi)
+          find "$APP_PATH" -name "AppIcon*.png" -type f -delete 2>/dev/null || true
+          find "$APP_PATH" -type d -name "AppIcon.appiconset" -exec rm -rf {} + 2>/dev/null || true
           
-          # 3. Đổi Tên hiển thị & URL Schemes (cydia://, dopamine:// -> store://)
-          plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
-          # Sửa URL Scheme trong mảng
-          plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLSchemes</key><array><string>store</string></array></dict></array>" "$INFO_PLIST"
-          
-          # 4. Sửa các chuỗi nhạy cảm (Obfuscation cơ bản trong Info)
-          plutil -replace CFBundleShortVersionString -string "16.7.10" "$INFO_PLIST"
+          plutil -remove CFBundleIcons "$INFO_PLIST" 2>/dev/null || true
+          plutil -remove CFBundleIconFiles "$INFO_PLIST" 2>/dev/null || true
+          plutil -remove CFBundleIconFile "$INFO_PLIST" 2>/dev/null || true
+          plutil -remove CFBundleIconName "$INFO_PLIST" 2>/dev/null || true
 
-      - name: Final Repack
-        run: |
-          cd temp && zip -qr ../Hardcore_Stealth_SystemHealth.tipa Payload
+          # 2. ĐỔI TÊN BINARY VẬT LÝ (Dopamine -> SystemHealth)
+          mv "$APP_PATH/Dopamine" "$APP_PATH/SystemHealth"
+          plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
+
+          # 3. ĐỔI THÔNG TIN HỆ THỐNG (Stealth Info)
+          plutil -replace CFBundleIdentifier -string "com.apple.kernel.health-check" "$INFO_PLIST"
+          plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
+          plutil -replace CFBundleName -string "System Health" "$INFO_PLIST"
+          plutil -replace CFBundleVersion -string "16.7.10" "$INFO_PLIST"
+          plutil -replace CFBundleShortVersionString -string "16.7.10" "$INFO_PLIST"
           
-      - name: Upload
+          # 4. ĐỔI URL SCHEMES (store://)
+          plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLSchemes</key><array><string>store</string></array></dict></array>" "$INFO_PLIST"
+
+          # 5. ĐÓNG GÓI LẠI (Ghép từ đoạn bồ bổ sung)
+          echo "Repackaging TIPA..."
+          cd tipa_temp
+          zip -qr "../SystemHealth.tipa" Payload
+          cd ..
+          
+          echo "✅ ================================"
+          echo "✅ STEALTH BUILD COMPLETED!"
+          echo "✅ Bundle ID: com.apple.kernel.health-check"
+          echo "✅ Display Name: System Health"
+          echo "✅ Version: 16.7.10 (iOS System)"
+          echo "✅ Icon: Removed (Invisible Mode)"
+          echo "✅ Final File: SystemHealth.tipa"
+          echo "✅ ================================"
+
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Hardcore-Stealth-Edition
-          path: Hardcore_Stealth_SystemHealth.tipa
-
-
+          name: SystemHealth.tipa
+          path: SystemHealth.tipa
