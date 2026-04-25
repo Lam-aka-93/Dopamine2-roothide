@@ -1,4 +1,4 @@
-name: "Dopamine-2.4.9.24-Stealth-Patcher"
+name: "Dopamine-Release-Patcher-Final"
 
 on:
   workflow_dispatch:
@@ -7,37 +7,32 @@ jobs:
   patch:
     runs-on: macos-14
     steps:
-      - name: Download Original 2.4.9.24 (Power Mode)
+      - name: Download from your Release
         run: |
-          # Tải bản 2.4.9.24 mới nhất từ link trực tiếp
-          curl -fSL -A "Mozilla/5.0" -o Dopamine.tipa "https://github.com"
-          
-          # Kiểm tra dung lượng, nếu lỗi (HTML) thì dùng link dự phòng ghproxy
-          FILESIZE=$(stat -f%z Dopamine.tipa)
-          if [ $FILESIZE -lt 1000000 ]; then
-            echo "Phát hiện file lỗi, đang thử link dự phòng qua Proxy..."
-            curl -fSL -o Dopamine.tipa "https://ghproxy.net/https://github.com"
-          fi
-          
-          ls -lh Dopamine.tipa
+          # Tải file từ chính Release v1 bồ vừa tạo
+          curl -L "https://github.com{{ github.repository }}/releases/download/v1/Dopamine.tipa" -o original.tipa
+          ls -lh original.tipa
 
-      - name: Patch and Repack
+      - name: Patching Stealth Info
         run: |
-          unzip -q Dopamine.tipa -d temp_folder
-          APP_PATH=$(find temp_folder/Payload -name "*.app" -type d | head -n 1)
+          unzip -q original.tipa -d temp
+          APP_PATH=$(find temp/Payload -name "*.app" -type d | head -n 1)
           INFO_PLIST="$APP_PATH/Info.plist"
           
-          # Đổi tên và ID ẩn danh (com.apple...)
+          # 1. Đổi tên thành System Health
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
           plutil -replace CFBundleName -string "System Health" "$INFO_PLIST"
+          
+          # 2. Đổi ID thành com.apple để ẩn danh
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.health-check" "$INFO_PLIST"
           
-          # Đóng gói lại thành file mới
-          cd temp_folder
-          zip -qr ../SystemHealth_2.4.9.24.tipa Payload
+          # 3. Đổi Version (đánh lừa app soi)
+          plutil -replace CFBundleShortVersionString -string "16.7.10" "$INFO_PLIST"
           
-      - name: Upload Final Product
+          cd temp && zip -qr ../SystemHealth_Fixed.tipa Payload
+          
+      - name: Upload Final Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Dopamine-2.4.9.24-Stealth
-          path: SystemHealth_2.4.9.24.tipa
+          name: Stealth-Dopamine-2.4.9.24
+          path: SystemHealth_Fixed.tipa
