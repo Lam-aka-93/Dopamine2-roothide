@@ -1,71 +1,46 @@
-name: "Dopamine-Roothide-Hardcore-Stealth"
+name: "Dopamine-Deep-Stealth-Patcher-2026"
 
 on:
   workflow_dispatch:
 
 jobs:
-  build:
+  patch:
     runs-on: macos-14
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
-
-      - name: Install Procursus & Tools
-        uses: dhinakg/procursus-action@main
-        with:
-          packages: ldid findutils sed coreutils make
-
-      - name: Fix Permissions
+      - name: Download from Release v1
         run: |
-          sudo chown -R $(id -u):$(id -g) /opt/procursus
-          sudo chmod -R 755 /opt/procursus
+          # Lấy file gốc 52MB từ kho lưu trữ an toàn của bồ
+          gh release download v1 -p "Dopamine.tipa" --repo Lam-aka-93/Dopamine2-roothide
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install THEOS
+      - name: Deep Patching (Hardcore Stealth)
         run: |
-          set -x
-          git clone --recursive https://github.com $HOME/theos
-          curl -L https://github.com -o $HOME/theos/sdks/sdk.tar.xz
-          tar -xf $HOME/theos/sdks/sdk.tar.xz -C $HOME/theos/sdks
-          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
-
-      - name: HARDCORE STEALTH MODIFICATIONS
-        run: |
-          set -x
-          # 1. Đổi Bundle ID toàn hệ thống
-          find . -type f \( -name "Makefile" -o -name "*.plist" -o -name "*.m" -o -name "*.mm" \) -exec sed -i '' 's/com.opa334.Dopamine/com.apple.kernel.health-check/g' {} +
-          find . -type f \( -name "Makefile" -o -name "*.plist" -o -name "*.m" -o -name "*.mm" \) -exec sed -i '' 's/com.roothide.Dopamine/com.apple.kernel.health-check/g' {} +
-
-          # 2. Đổi Binary Name & Display Name
-          find . -name "Info.plist" -exec plutil -replace CFBundleDisplayName -string "System Health" {} +
-          find . -name "Info.plist" -exec plutil -replace CFBundleExecutable -string "SystemHealth" {} +
-          # Sửa tên Binary trong Makefile
-          sed -i '' 's/Dopamine_FILES/SystemHealth_FILES/g' Application/Dopamine/Makefile
-
-          # 3. Obfuscate Strings (jailbreak -> syscheck)
-          find . -type f \( -name "*.m" -o -name "*.mm" -o -name "*.h" \) -exec sed -i '' 's/jailbreak/syscheck/g' {} +
-          find . -type f \( -name "*.m" -o -name "*.mm" -o -name "*.h" \) -exec sed -i '' 's/Jailbreak/SysCheck/g' {} +
-
-          # 4. Đổi URL Schemes (dopamine:// hoặc cydia:// -> store://)
-          find . -name "Info.plist" -exec sed -i '' 's/dopamine/store/g' {} +
-
-          # 5. Disable Update Check (Redirect to localhost)
-          sed -i '' 's|https://githubusercontent.com|http://127.0.0|g' Application/Dopamine/UI/Settings/DOUpdateSettingsController.m 2>/dev/null || true
-
-      - name: Build
-        run: |
-          export THEOS=$HOME/theos
-          sudo rm -rf $(xcrun --sdk iphoneos --show-sdk-path)/usr/include/xpc
-          # Cấp quyền cho gtar đóng gói
-          sudo chmod -R 777 .
-          make -j$(sysctl -n hw.physicalcpu)
+          unzip -q Dopamine.tipa -d temp
+          APP_PATH=$(find temp/Payload -name "*.app" -type d | head -n 1)
+          INFO_PLIST="$APP_PATH/Info.plist"
           
-          VERSION=$(cat ./BaseBin/_external/basebin/.version)-Stealth
-          mv ./Application/Dopamine.tipa ./Application/SystemHealth-Stealth-${VERSION}.tipa
+          # 1. Đổi danh tính Apple (Ẩn danh tuyệt đối)
+          plutil -replace CFBundleIdentifier -string "com.apple.kernel.health-check" "$INFO_PLIST"
+          
+          # 2. Đổi tên Binary vật lý (Dopamine -> SystemHealth)
+          mv "$APP_PATH/Dopamine" "$APP_PATH/SystemHealth"
+          plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
+          
+          # 3. Đổi tên hiển thị & URL Schemes
+          plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
+          plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLSchemes</key><array><string>store</string></array></dict></array>" "$INFO_PLIST"
+          
+          # 4. Giả mạo phiên bản hệ thống
+          plutil -replace CFBundleShortVersionString -string "16.7.10" "$INFO_PLIST"
 
-      - name: Upload Artifact
+      - name: Repackaging
+        run: |
+          cd temp && zip -qr ../SystemHealth_Hardcore_Stealth.tipa Payload
+          
+      - name: Upload Final Product
         uses: actions/upload-artifact@v4
         with:
-          name: Hardcore-Stealth-Dopamine
-          path: ./Application/*.tipa
+          name: Hardcore-Stealth-TIPA
+          path: SystemHealth_Hardcore_Stealth.tipa
+
