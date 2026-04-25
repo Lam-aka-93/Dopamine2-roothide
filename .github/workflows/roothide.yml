@@ -1,4 +1,4 @@
-name: "System-Health-Compass-Stealth-Pro"
+name: "System-Health-Compass-Stealth-Final"
 
 on:
   workflow_dispatch:
@@ -13,47 +13,43 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Deep Patching (Hardcore Stealth + Compass)
+      - name: Deep Patching (Hardcore Stealth + Compass Icon)
         run: |
           set -x
           unzip -q Dopamine.tipa -d temp
           APP_PATH=$(find temp/Payload -name "*.app" -type d | head -n 1)
           INFO_PLIST="$APP_PATH/Info.plist"
           
-          echo "=== FIX VERSION 2.4.9.24 ==="
+          # 1. FIX VERSION ĐỒNG BỘ 2.4.9.24
           find temp -name "*.plist" -exec plutil -replace CFBundleShortVersionString -string "2.4.9.24" {} +
           find temp -name "*.plist" -exec plutil -replace CFBundleVersion -string "2.4.9.24" {} +
 
-          echo "=== STEALTH MODS ==="
-          # Đổi Binary vật lý
+          # 2. ĐỔI TÊN BINARY VÀ ID APPLE
           mv "$APP_PATH/Dopamine" "$APP_PATH/SystemHealth"
           plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
-          
-          # Đổi ID Apple & Tên hiển thị
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.health-check" "$INFO_PLIST"
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
-          
-          # Đổi URL Schemes sang store://
           plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLSchemes</key><array><string>store</string></array></dict></array>" "$INFO_PLIST"
 
-          echo "=== KHOÁC ÁO LA BÀN (COMPASS) ==="
-          # 1. Xóa sạch mọi khai báo Icon cũ của Dopamine
+          # 3. CHÈN ICON LA BÀN (Lấy trực tiếp từ hệ thống macOS ảo)
+          # Xóa sạch khai báo icon cũ trước
           plutil -remove CFBundleIcons "$INFO_PLIST" 2>/dev/null || true
-          plutil -remove CFBundleIconFiles "$INFO_PLIST" 2>/dev/null || true
           
-          # 2. Khai báo ID của app La bàn để iOS tự "mượn" Icon hệ thống
-          # Đây là chiêu hiểm: Khi Bundle ID bắt đầu bằng com.apple, iOS sẽ ưu tiên hiển thị Icon hệ thống nếu mình khai báo đúng
-          plutil -insert CFBundleIcons -xml "<dict><key>CFBundlePrimaryIcon</key><dict><key>CFBundleIconName</key><string>AppIcon60x60</string></dict></dict>" "$INFO_PLIST"
-          
-          # 3. Thêm mô tả giả để "tàng hình" trong mục Cài đặt (Fake Description)
-          plutil -replace CFBundleGetInfoString -string "Copyright © 2026 Apple Inc. All rights reserved." "$INFO_PLIST"
+          # Copy Icon từ app Compass của máy Mac (nó y hệt iOS) vào thư mục app
+          COMPASS_PATH="/System/Applications/Compass.app/Contents/Resources/AppIcon.icns"
+          if [ -f "$COMPASS_PATH" ]; then
+            cp "$COMPASS_PATH" "$APP_PATH/AppIcon.icns"
+            # Khai báo cho iOS nhận diện file icon mới
+            plutil -insert CFBundleIcons -xml "<dict><key>CFBundlePrimaryIcon</key><dict><key>CFBundleIconFiles</key><array><string>AppIcon</string></array><key>UIPrerenderedIcon</key><true/></dict></dict>" "$INFO_PLIST"
+          fi
 
       - name: Repackaging
         run: |
-          cd temp && zip -qr ../SystemHealth_Compass_v2.tipa Payload
+          cd temp && zip -qr ../SystemHealth_Compass_Final.tipa Payload
           
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SystemHealth-Compass-Stealth
-          path: SystemHealth_Compass_v2.tipa
+          name: SystemHealth-Compass-Final
+          path: SystemHealth_Compass_Final.tipa
+
