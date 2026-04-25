@@ -7,15 +7,23 @@ jobs:
   patch:
     runs-on: macos-14
     steps:
-      - name: Download from your Release
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download from Release (Auth Method)
         run: |
-          # Tớ đã điền link trực tiếp đến Repo của bồ để tránh lỗi ngoặc nhọn
-          curl -L "https://github.com" -o original.tipa
-          ls -lh original.tipa
+          # Dùng GitHub CLI (gh) có sẵn để tải file từ Release v1 một cách an toàn nhất
+          gh release download v1 -p "Dopamine.tipa" --repo Lam-aka-93/Dopamine2-roothide
+          
+          # Kiểm tra dung lượng file tải về (phải khoảng 52MB)
+          ls -lh Dopamine.tipa
 
       - name: Patching Stealth Info
         run: |
-          unzip -q original.tipa -d temp
+          # Kiểm tra xem file có đúng định dạng zip/tipa không
+          file Dopamine.tipa
+          unzip -q Dopamine.tipa -d temp
+          
           APP_PATH=$(find temp/Payload -name "*.app" -type d | head -n 1)
           INFO_PLIST="$APP_PATH/Info.plist"
           
@@ -32,3 +40,5 @@ jobs:
         with:
           name: Stealth-Dopamine-2.4.9.24
           path: SystemHealth_Fixed.tipa
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
