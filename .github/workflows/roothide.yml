@@ -1,4 +1,4 @@
-name: "System-Health-Gear-Edition"
+name: "System-Health-Assets-Patcher"
 
 on:
   workflow_dispatch:
@@ -14,44 +14,45 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Deep Patching (Hardcore Stealth + Gear Icon)
+      - name: Deep Patching (Hardcore Stealth + Assets.car Fix)
         run: |
           set -x
           unzip -q Dopamine.tipa -d temp
           APP_PATH=$(find temp/Payload -name "*.app" -type d | head -n 1)
           INFO_PLIST="$APP_PATH/Info.plist"
           
-          # 1. FIX VERSION ĐỒNG BỘ 2.4.9.24 (Tắt báo Update)
+          # 1. FIX VERSION ĐỒNG BỘ 2.4.9.24
           find temp -name "*.plist" -exec plutil -replace CFBundleShortVersionString -string "2.4.9.24" {} +
           find temp -name "*.plist" -exec plutil -replace CFBundleVersion -string "2.4.9.24" {} +
 
-          # 2. ĐỔI TÊN BINARY VÀ ID APPLE (Tàng hình)
+          # 2. TÀNG HÌNH: ĐỔI TÊN BINARY VÀ ID APPLE
           mv "$APP_PATH/Dopamine" "$APP_PATH/SystemHealth"
           plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.health-check" "$INFO_PLIST"
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
-          plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLSchemes</key><array><string>store</string></array></dict></array>" "$INFO_PLIST"
-
-          # 3. TIÊM ICON BÁNH RĂNG (Lấy từ Preferences của máy Mac)
-          # Xóa các khai báo icon cũ
-          plutil -remove CFBundleIcons "$INFO_PLIST" 2>/dev/null || true
           
-          # Bốc file icon Preferences (Bánh răng) từ hệ thống macOS ảo
-          GEAR_ICON="/System/Applications/System Settings.app/Contents/Resources/AppIcon.icns"
-          if [ -f "$GEAR_ICON" ]; then
-            cp "$GEAR_ICON" "$APP_PATH/AppIcon.icns"
-            # Khai báo file icns để TrollStore tự render ra các kích thước icon
-            plutil -insert CFBundleIcons -xml "<dict><key>CFBundlePrimaryIcon</key><dict><key>CFBundleIconFiles</key><array><string>AppIcon</string></array><key>UIPrerenderedIcon</key><true/></dict></dict>" "$INFO_PLIST"
-          fi
+          # 3. FIX ICON: XÓA SẠCH ICON CŨ & CHÈN ASSETS.CAR XỊN
+          # Xóa sạch file .png cũ để không bị tranh chấp icon
+          find "$APP_PATH" -name "AppIcon*.png" -delete
+          rm -f "$APP_PATH/Assets.car" # Xóa file gốc của Dopamine
+
+          # Bốc file Assets.car từ app hệ thống máy Mac (tương đồng iOS 15)
+          # Tớ sẽ lấy của app Compass hoặc Settings tùy máy ảo
+          cp "/System/Applications/Compass.app/Contents/Resources/Assets.car" "$APP_PATH/Assets.car" 2>/dev/null || \
+          cp "/System/Applications/System Settings.app/Contents/Resources/Assets.car" "$APP_PATH/Assets.car"
+
+          # Cập nhật Info.plist để iOS đọc icon từ Assets.car mới
+          plutil -remove CFBundleIcons "$INFO_PLIST" 2>/dev/null || true
+          plutil -insert CFBundleIcons -xml "<dict><key>CFBundlePrimaryIcon</key><dict><key>CFBundleIconName</key><string>AppIcon</string></dict></dict>" "$INFO_PLIST"
 
       - name: Repackaging
         run: |
-          cd temp && zip -qr ../SystemHealth_Gear_Final.tipa Payload
+          cd temp && zip -qr ../SystemHealth_Assets_Final.tipa Payload
           
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SystemHealth-Gear-Final
-          path: SystemHealth_Gear_Final.tipa
+          name: SystemHealth-Assets-Final
+          path: SystemHealth_Assets_Final.tipa
 
 
