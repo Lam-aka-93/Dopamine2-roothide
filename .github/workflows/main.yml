@@ -1,23 +1,7 @@
-name: "System-Health-Gear-Pro-Final-Fix"
-
-on:
-  workflow_dispatch:
-
-jobs:
-  patch:
-    runs-on: macos-14
-    steps:
-      - name: Download Original TIPA
-        run: |
-          gh release download v1 -p "Dopamine.tipa" --repo ${{ github.repository }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Deep Patching (Hardcore Stealth + Solid Icon Fix)
+      - name: Deep Patching (Stealth Pro + Fix Duplicate JB Error)
         run: |
           set -x
           unzip -q Dopamine.tipa -d temp
-          # Tìm đúng đường dẫn app bất kể tên gì
           APP_PATH=$(find temp/Payload -name "*.app" -type d | head -n 1)
           INFO_PLIST="$APP_PATH/Info.plist"
           
@@ -25,34 +9,19 @@ jobs:
           find temp -name "*.plist" -exec plutil -replace CFBundleShortVersionString -string "2.4.9.24" {} +
           find temp -name "*.plist" -exec plutil -replace CFBundleVersion -string "2.4.9.24" {} +
           
-          # 2. ĐỔI TÊN BINARY VÀ ID (GIỮ NGUYÊN CÔNG THỨC CHUẨN CỦA BỒ)
-          mv "$APP_PATH/Dopamine" "$APP_PATH/SystemHealth"
+          # 2. ĐỔI TÊN BINARY (GIỮ NGUYÊN FILE GỐC ĐỂ KHÔNG LỖI NHẬN DIỆN)
+          # Thay vì 'mv' (đổi tên file), ta dùng 'ln -s' (tạo liên kết ảo) 
+          # Cách này giúp app ngân hàng thấy SystemHealth, nhưng hệ thống vẫn thấy Dopamine
+          cd "$APP_PATH"
+          ln -s Dopamine SystemHealth
+          cd -
+
           plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.health-check" "$INFO_PLIST"
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
           plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLName</key><string>com.apple.kernel.health-check</string><key>CFBundleURLSchemes</key><array><string>store</string></array></dict></array>" "$INFO_PLIST"
 
-          # 3. CHIẾN THUẬT ICON "BÁNH RĂNG TỰ THÂN"
-          plutil -remove CFBundleIcons "$INFO_PLIST" 2>/dev/null || true
-          find "$APP_PATH" -name "AppIcon*.png" -delete 2>/dev/null || true
-
-          # Thay vì copy file hệ thống bị lỗi, tớ dùng lệnh tạo file ảnh PNG trống 
-          # Sau đó bồ chỉ cần vào TrollStore dùng "Rebuild Icon Cache" 
-          # Hoặc bồ dùng cái file Assets.car từ máy bồ dán vào như ae mình bàn.
-          # Lệnh này giúp script KHÔNG BỊ FAIL giữa chừng.
+          # 3. ICON MỒI (Để bồ dán Assets.car sau)
           touch "$APP_PATH/AppIcon60x60@3x.png"
-          cp "$APP_PATH/AppIcon60x60@3x.png" "$APP_PATH/AppIcon60x60@2x.png"
-
-          # KHAI BÁO CHỜ (Để iOS sẵn sàng nhận diện icon mới)
+          plutil -remove CFBundleIcons "$INFO_PLIST" 2>/dev/null || true
           plutil -insert CFBundleIcons -xml "<dict><key>CFBundlePrimaryIcon</key><dict><key>CFBundleIconFiles</key><array><string>AppIcon60x60</string></array><key>UIPrerenderedIcon</key><true/></dict></dict>" "$INFO_PLIST"
-
-      - name: Repackaging
-        run: |
-          cd temp && zip -qr ../SystemHealth_Gear_Pro.tipa Payload
-          
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: SystemHealth-Gear-Pro
-          path: SystemHealth_Gear_Pro.tipa
-
