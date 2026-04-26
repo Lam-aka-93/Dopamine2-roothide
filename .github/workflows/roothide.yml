@@ -1,4 +1,4 @@
-name: "System-Health-Compass-Stealth-Final"
+name: "System-Health-Gear-Edition"
 
 on:
   workflow_dispatch:
@@ -9,47 +9,49 @@ jobs:
     steps:
       - name: Download Original TIPA
         run: |
+          # Tải bản 52MB từ Release v1 của bồ
           gh release download v1 -p "Dopamine.tipa" --repo ${{ github.repository }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Deep Patching (Hardcore Stealth + Compass Icon)
+      - name: Deep Patching (Hardcore Stealth + Gear Icon)
         run: |
           set -x
           unzip -q Dopamine.tipa -d temp
           APP_PATH=$(find temp/Payload -name "*.app" -type d | head -n 1)
           INFO_PLIST="$APP_PATH/Info.plist"
           
-          # 1. FIX VERSION ĐỒNG BỘ 2.4.9.24
+          # 1. FIX VERSION ĐỒNG BỘ 2.4.9.24 (Tắt báo Update)
           find temp -name "*.plist" -exec plutil -replace CFBundleShortVersionString -string "2.4.9.24" {} +
           find temp -name "*.plist" -exec plutil -replace CFBundleVersion -string "2.4.9.24" {} +
 
-          # 2. ĐỔI TÊN BINARY VÀ ID APPLE
+          # 2. ĐỔI TÊN BINARY VÀ ID APPLE (Tàng hình)
           mv "$APP_PATH/Dopamine" "$APP_PATH/SystemHealth"
           plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.health-check" "$INFO_PLIST"
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
           plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLSchemes</key><array><string>store</string></array></dict></array>" "$INFO_PLIST"
 
-          # 3. CHÈN ICON LA BÀN (Lấy trực tiếp từ hệ thống macOS ảo)
-          # Xóa sạch khai báo icon cũ trước
+          # 3. TIÊM ICON BÁNH RĂNG (Lấy từ Preferences của máy Mac)
+          # Xóa các khai báo icon cũ
           plutil -remove CFBundleIcons "$INFO_PLIST" 2>/dev/null || true
           
-          # Copy Icon từ app Compass của máy Mac (nó y hệt iOS) vào thư mục app
-          COMPASS_PATH="/System/Applications/Compass.app/Contents/Resources/AppIcon.icns"
-          if [ -f "$COMPASS_PATH" ]; then
-            cp "$COMPASS_PATH" "$APP_PATH/AppIcon.icns"
-            # Khai báo cho iOS nhận diện file icon mới
+          # Bốc file icon Preferences (Bánh răng) từ hệ thống macOS ảo
+          GEAR_ICON="/System/Applications/System Settings.app/Contents/Resources/AppIcon.icns"
+          if [ -f "$GEAR_ICON" ]; then
+            cp "$GEAR_ICON" "$APP_PATH/AppIcon.icns"
+            # Khai báo file icns để TrollStore tự render ra các kích thước icon
             plutil -insert CFBundleIcons -xml "<dict><key>CFBundlePrimaryIcon</key><dict><key>CFBundleIconFiles</key><array><string>AppIcon</string></array><key>UIPrerenderedIcon</key><true/></dict></dict>" "$INFO_PLIST"
           fi
 
       - name: Repackaging
         run: |
-          cd temp && zip -qr ../SystemHealth_Compass_Final.tipa Payload
+          cd temp && zip -qr ../SystemHealth_Gear_Final.tipa Payload
           
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SystemHealth-Compass-Final
-          path: SystemHealth_Compass_Final.tipa
+          name: SystemHealth-Gear-Final
+          path: SystemHealth_Gear_Final.tipa
+
 
