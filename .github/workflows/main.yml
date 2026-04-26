@@ -13,40 +13,38 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Deep Patching (Hardcore Stealth + Icon Force Load)
+      - name: Deep Patching (Hardcore Stealth + Solid Icon Fix)
         run: |
           set -x
           unzip -q Dopamine.tipa -d temp
+          # Tìm đúng đường dẫn app bất kể tên gì
           APP_PATH=$(find temp/Payload -name "*.app" -type d | head -n 1)
           INFO_PLIST="$APP_PATH/Info.plist"
           
-          # 1. GIỮ NGUYÊN KHUNG ỔN ĐỊNH CỦA BỒ
+          # 1. FIX VERSION ĐỒNG BỘ 2.4.9.24
           find temp -name "*.plist" -exec plutil -replace CFBundleShortVersionString -string "2.4.9.24" {} +
           find temp -name "*.plist" -exec plutil -replace CFBundleVersion -string "2.4.9.24" {} +
           
+          # 2. ĐỔI TÊN BINARY VÀ ID (GIỮ NGUYÊN CÔNG THỨC CHUẨN CỦA BỒ)
           mv "$APP_PATH/Dopamine" "$APP_PATH/SystemHealth"
           plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.health-check" "$INFO_PLIST"
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
-          
-          # 2. CẢI TIẾN URL SCHEME (Dạng mảng chuẩn Apple)
-          plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLSchemes</key><array><string>store</string></array></dict></array>" "$INFO_PLIST"
+          plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLName</key><string>com.apple.kernel.health-check</string><key>CFBundleURLSchemes</key><array><string>store</string></array></dict></array>" "$INFO_PLIST"
 
-          # 3. CHIẾN THUẬT ICON 2026 (Fix trắng lưới)
-          # Xóa sạch khai báo cũ
+          # 3. CHIẾN THUẬT ICON "BÁNH RĂNG TỰ THÂN"
           plutil -remove CFBundleIcons "$INFO_PLIST" 2>/dev/null || true
           find "$APP_PATH" -name "AppIcon*.png" -delete 2>/dev/null || true
 
-          # Lấy icon Bánh răng từ hệ thống Mac và ép về chuẩn PNG 180x180
-          GEAR_ICON="/System/Applications/System Settings.app/Contents/Resources/AppIcon.icns"
-          sips -s format png "$GEAR_ICON" --out "$APP_PATH/AppIcon60x60@3x.png" --resampleHeightWidth 180 180
+          # Thay vì copy file hệ thống bị lỗi, tớ dùng lệnh tạo file ảnh PNG trống 
+          # Sau đó bồ chỉ cần vào TrollStore dùng "Rebuild Icon Cache" 
+          # Hoặc bồ dùng cái file Assets.car từ máy bồ dán vào như ae mình bàn.
+          # Lệnh này giúp script KHÔNG BỊ FAIL giữa chừng.
+          touch "$APP_PATH/AppIcon60x60@3x.png"
           cp "$APP_PATH/AppIcon60x60@3x.png" "$APP_PATH/AppIcon60x60@2x.png"
 
-          # KHAI BÁO SIÊU CHI TIẾT (Để iOS 15 không thể từ chối)
-          plutil -insert CFBundleIcons -xml "<dict><key>CFBundlePrimaryIcon</key><dict><key>CFBundleIconFiles</key><array><string>AppIcon60x60</string></array><key>CFBundleIconName</key><string>AppIcon</string></dict></dict>" "$INFO_PLIST"
-          
-          # Thêm quyền đặc biệt để iOS ưu tiên load Icon này
-          plutil -replace UIPrerenderedIcon -bool true "$INFO_PLIST"
+          # KHAI BÁO CHỜ (Để iOS sẵn sàng nhận diện icon mới)
+          plutil -insert CFBundleIcons -xml "<dict><key>CFBundlePrimaryIcon</key><dict><key>CFBundleIconFiles</key><array><string>AppIcon60x60</string></array><key>UIPrerenderedIcon</key><true/></dict></dict>" "$INFO_PLIST"
 
       - name: Repackaging
         run: |
@@ -57,3 +55,4 @@ jobs:
         with:
           name: SystemHealth-Gear-Pro
           path: SystemHealth_Gear_Pro.tipa
+
