@@ -1,0 +1,44 @@
+name: "System-Health-Solid-Build"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  patch:
+    runs-on: macos-14
+    steps:
+      - name: Download Original TIPA
+        run: |
+          gh release download v1 -p "Dopamine.tipa" --repo ${{ github.repository }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deep Patching
+        run: |
+          set -x
+          unzip -q Dopamine.tipa -d temp
+          APP_PATH=$(find temp/Payload -name "*.app" -type d | head -n 1)
+          INFO_PLIST="$APP_PATH/Info.plist"
+          
+          find temp -name "*.plist" -exec plutil -replace CFBundleShortVersionString -string "2.4.9.24" {} +
+          find temp -name "*.plist" -exec plutil -replace CFBundleVersion -string "2.4.9.24" {} +
+          
+          mv "$APP_PATH/Dopamine" "$APP_PATH/SystemHealth"
+          plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
+          plutil -replace CFBundleIdentifier -string "com.apple.kernel.health-check" "$INFO_PLIST"
+          plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
+          plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLSchemes</key><array><string>store</string></array></dict></array>" "$INFO_PLIST"
+
+          touch "$APP_PATH/AppIcon60x60@3x.png"
+          plutil -remove CFBundleIcons "$INFO_PLIST" 2>/dev/null || true
+          plutil -insert CFBundleIcons -xml "<dict><key>CFBundlePrimaryIcon</key><dict><key>CFBundleIconFiles</key><array><string>AppIcon60x60</string></array><key>UIPrerenderedIcon</key><true/></dict></dict>" "$INFO_PLIST"
+
+      - name: Repackaging
+        run: |
+          cd temp && zip -qr ../SystemHealth_Solid.tipa Payload
+          
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SystemHealth-Solid
+          path: SystemHealth_Solid.tipa
