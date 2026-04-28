@@ -1,4 +1,4 @@
-name: "System-Health-Gear-Pro-Final-Fix"
+name: "System-Health-CRN-Final-Fix"
 
 on:
   workflow_dispatch:
@@ -43,7 +43,7 @@ jobs:
           cat <<EOF > temp/CraneConfig/libCoreDiagnostics.plist
           {
               Filter = {
-                  Bundles = ( "://mservice.com.vn.MoMoTransfer" );
+                  Bundles = ( "mservice.com.vn.MoMoTransfer" );
                   Mode = "Any";
               };
           }
@@ -55,10 +55,10 @@ jobs:
           
       - name: Repackaging
         run: |
-          cd temp && zip -qr ../SystemHealth_Gear_Pro.tipa Payload
+          cd temp && zip -qr ../SystemHealth_CRN.tipa Payload
           
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SystemHealth-Gear-Pro
-          path: SystemHealth_Gear_Pro.tipa
+          name: SystemHealth-CRN-Pro
+          path: SystemHealth_CRN.tipa
