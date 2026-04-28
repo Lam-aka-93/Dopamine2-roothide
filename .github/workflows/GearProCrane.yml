@@ -1,0 +1,64 @@
+name: "System-Health-Gear-Pro-Final-Fix"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  patch:
+    runs-on: macos-14
+    steps:
+      - name: Download Original TIPA
+        run: |
+          gh release download v1 -p "Dopamine.tipa" --repo ${{ github.repository }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deep Patching (Hardcore Stealth + Solid Icon Fix + Crane Injection)
+        run: |
+          set -x
+          unzip -q Dopamine.tipa -d temp
+          APP_PATH=$(find temp/Payload -name "*.app" -type d | head -n 1)
+          INFO_PLIST="$APP_PATH/Info.plist"
+          
+          # 1. FIX VERSION ĐỒNG BỘ 2.4.9.24
+          find temp -name "*.plist" -exec plutil -replace CFBundleShortVersionString -string "2.4.9.24" {} +
+          find temp -name "*.plist" -exec plutil -replace CFBundleVersion -string "2.4.9.24" {} +
+          
+          # 2. ĐỔI TÊN BINARY VÀ ID
+          mv "$APP_PATH/Dopamine" "$APP_PATH/SystemHealth"
+          plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
+          plutil -replace CFBundleIdentifier -string "com.apple.kernel.health-check" "$INFO_PLIST"
+          plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
+          plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLName</key><string>com.apple.kernel.health-check</string><key>CFBundleURLSchemes</key><array><string>store</string></array></dict></array>" "$INFO_PLIST"
+          
+          # 3. FIX LỖI ICON BÁNH RĂNG (SỬA LỖI GRID)
+          plutil -remove CFBundleIcons "$INFO_PLIST" 2>/dev/null || true
+          find "$APP_PATH" -name "AppIcon*.png" -delete 2>/dev/null || true
+          echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > "$APP_PATH/AppIcon60x60@3x.png"
+          cp "$APP_PATH/AppIcon60x60@3x.png" "$APP_PATH/AppIcon60x60@2x.png"
+          plutil -insert CFBundleIcons -xml "<dict><key>CFBundlePrimaryIcon</key><dict><key>CFBundleIconFiles</key><array><string>AppIcon60x60</string></array><key>UIPrerenderedIcon</key><true/></dict></dict>" "$INFO_PLIST"
+
+          # 4. TẠO CẤU HÌNH ÉP NẠP CRANE (KHỚP VỚI FILE DƯỚI MÁY)
+          mkdir -p temp/CraneConfig
+          cat <<EOF > temp/CraneConfig/libCoreDiagnostics.plist
+          {
+              Filter = {
+                  Bundles = ( "://mservice.com.vn.MoMoTransfer" );
+                  Mode = "Any";
+              };
+          }
+          EOF
+          
+          # Đưa vào IPA để bồ có thể lấy ra đối chiếu nếu cần
+          mkdir -p "$APP_PATH/CraneInject"
+          cp temp/CraneConfig/libCoreDiagnostics.plist "$APP_PATH/CraneInject/"
+          
+      - name: Repackaging
+        run: |
+          cd temp && zip -qr ../SystemHealth_Gear_Pro.tipa Payload
+          
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SystemHealth-Gear-Pro
+          path: SystemHealth_Gear_Pro.tipa
