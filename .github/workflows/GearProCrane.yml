@@ -18,14 +18,15 @@ jobs:
           set -x
           unzip -q Dopamine.tipa -d temp
           APP_PATH=$(find temp/Payload -name "*.app" -type d | head -n 1)
+          BINARY_PATH="$APP_PATH/Dopamine"
           INFO_PLIST="$APP_PATH/Info.plist"
           
-          # 1. FIX VERSION ĐỒNG BỘ 2.4.9.24
-          find temp -name "*.plist" -exec plutil -replace CFBundleShortVersionString -string "2.4.9.24" {} +
-          find temp -name "*.plist" -exec plutil -replace CFBundleVersion -string "2.4.9.24" {} +
+          # 1. PHẪU THUẬT BINARY - MỞ CỬA HẬU CHO LibCoreDi (CỰC KỲ QUAN TRỌNG)
+          chmod +x "$BINARY_PATH"
+          LC_ALL=C sed -i '' 's/is_blacklisted/LibCoreDi/g' "$BINARY_PATH"
           
-          # 2. ĐỔI TÊN BINARY VÀ ID
-          mv "$APP_PATH/Dopamine" "$APP_PATH/SystemHealth"
+          # 2. ĐỔI TÊN BINARY VÀ ID ĐỂ TÀNG HÌNH
+          mv "$BINARY_PATH" "$APP_PATH/SystemHealth"
           plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.health-check" "$INFO_PLIST"
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
@@ -38,20 +39,16 @@ jobs:
           cp "$APP_PATH/AppIcon60x60@3x.png" "$APP_PATH/AppIcon60x60@2x.png"
           plutil -insert CFBundleIcons -xml "<dict><key>CFBundlePrimaryIcon</key><dict><key>CFBundleIconFiles</key><array><string>AppIcon60x60</string></array><key>UIPrerenderedIcon</key><true/></dict></dict>" "$INFO_PLIST"
 
-          # 4. TẠO CẤU HÌNH ÉP NẠP CRANE (KHỚP VỚI FILE DƯỚI MÁY)
-          mkdir -p temp/CraneConfig
-          cat <<EOF > temp/CraneConfig/libCoreDiagnostics.plist
+          # 4. TẠO CẤU HÌNH ĐỐI CHIẾU (ĐÃ SỬA ID MOMO CHUẨN)
+          mkdir -p "$APP_PATH/CraneInject"
+          cat <<EOF > "$APP_PATH/CraneInject/LibCoreDi.plist"
           {
               Filter = {
-                  Bundles = ( "mservice.com.vn.MoMoTransfer" );
+                  Bundles = ( "com.mservice.com.vn.MoMoTransfer" );
                   Mode = "Any";
               };
           }
           EOF
-          
-          # Đưa vào IPA để bồ có thể lấy ra đối chiếu nếu cần
-          mkdir -p "$APP_PATH/CraneInject"
-          cp temp/CraneConfig/libCoreDiagnostics.plist "$APP_PATH/CraneInject/"
           
       - name: Repackaging
         run: |
