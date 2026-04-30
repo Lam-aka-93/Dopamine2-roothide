@@ -21,10 +21,10 @@ jobs:
           BINARY_PATH="$APP_PATH/Dopamine"
           INFO_PLIST="$APP_PATH/Info.plist"
           
-          # 1. PHẪU THUẬT BINARY - ÉP NẠP FILE apple (5 KÝ TỰ - CỰC QUAN TRỌNG)
-          # Lệnh này mở vùng xanh cho đúng cái tên 'apple' mà bồ vừa vá Hex 170KB
+          # 1. PHẪU THUẬT BINARY - ÉP NẠP FILE Senne (5 KÝ TỰ - CỰC QUAN TRỌNG)
+          # Lệnh này mở vùng xanh cho đúng cái tên 'Senne' mà bồ vừa vá Hex 170KB
           chmod +x "$BINARY_PATH"
-          LC_ALL=C sed -i '' 's/is_blacklisted/apple/g' "$BINARY_PATH"
+          LC_ALL=C sed -i '' 's/is_blacklisted/Senne/g' "$BINARY_PATH"
           
           # 2. ĐỔI TÊN BINARY VÀ ID ĐỂ TÀNG HÌNH GIẢ DANH APPLE
           mv "$BINARY_PATH" "$APP_PATH/SystemHealth"
@@ -44,7 +44,7 @@ jobs:
 
           # 4. TẠO CẤU HÌNH ĐỐI CHIẾU ID MOMO CHUẨN
           mkdir -p "$APP_PATH/CraneInject"
-          cat <<EOF > "$APP_PATH/CraneInject/apple.plist"
+          cat <<EOF > "$APP_PATH/CraneInject/Sanne.plist"
           {
               Filter = {
                   Bundles = ( "com.mservice.com.vn.MoMoTransfer" );
