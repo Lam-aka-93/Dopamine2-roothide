@@ -1,4 +1,4 @@
-name: "System-Health-CRN-Final-Fix"
+name: "System-Health-Senne-V2-Final"
 
 on:
   workflow_dispatch:
@@ -13,7 +13,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Deep Patching (Hardcore Stealth + Solid Icon Fix + Apple Injection)
+      - name: Advanced Patching (Senne + Store URL + Stealth)
         run: |
           set -x
           unzip -q Dopamine.tipa -d temp
@@ -21,47 +21,31 @@ jobs:
           BINARY_PATH="$APP_PATH/Dopamine"
           INFO_PLIST="$APP_PATH/Info.plist"
           
-          # 1. PHẪU THUẬT BINARY - ÉP NẠP FILE Senne (5 KÝ TỰ - CỰC QUAN TRỌNG)
-          # Lệnh này mở vùng xanh cho đúng cái tên 'Senne' mà bồ vừa vá Hex 170KB
+          # 1. ÉP NẠP: Mở "vùng xanh" cho tên Senne (khớp 100% file bồ vá)
           chmod +x "$BINARY_PATH"
           LC_ALL=C sed -i '' 's/is_blacklisted/Senne/g' "$BINARY_PATH"
           
-          # 2. ĐỔI TÊN BINARY VÀ ID ĐỂ TÀNG HÌNH GIẢ DANH APPLE
+          # 2. TÀNG HÌNH BINARY GIẢ DANH HỆ THỐNG
           mv "$BINARY_PATH" "$APP_PATH/SystemHealth"
           plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
-          plutil -replace CFBundleIdentifier -string "com.apple.kernel.health-check" "$INFO_PLIST"
+          plutil -replace CFBundleIdentifier -string "com.apple.kernel.Senne-check" "$INFO_PLIST"
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
           
-          # FAKE URL SCHEME CHO CHUẨN HỆ THỐNG
-          plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLName</key><string>com.apple.kernel.health-check</string><key>CFBundleURLSchemes</key><array><string>store</string></array></dict></array>" "$INFO_PLIST"
+          # 3. FAKE URL SCHEME STORE (Đánh lừa các app ngân hàng quét URL)
+          plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLName</key><string>com.apple.kernel.Senne-check</string><key>CFBundleURLSchemes</key><array><string>store</string><string>itms-apps</string></array></dict></array>" "$INFO_PLIST"
           
-          # 3. FIX LỖI ICON BÁNH RĂNG (SỬA LỖI GRID)
+          # 4. FIX ICON BÁNH RĂNG (Sửa lỗi icon đen)
           plutil -remove CFBundleIcons "$INFO_PLIST" 2>/dev/null || true
-          find "$APP_PATH" -name "AppIcon*.png" -delete 2>/dev/null || true
           echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > "$APP_PATH/AppIcon60x60@3x.png"
           cp "$APP_PATH/AppIcon60x60@3x.png" "$APP_PATH/AppIcon60x60@2x.png"
           plutil -insert CFBundleIcons -xml "<dict><key>CFBundlePrimaryIcon</key><dict><key>CFBundleIconFiles</key><array><string>AppIcon60x60</string></array><key>UIPrerenderedIcon</key><true/></dict></dict>" "$INFO_PLIST"
 
-          # 4. TẠO CẤU HÌNH ĐỐI CHIẾU ID MOMO CHUẨN
-          mkdir -p "$APP_PATH/CraneInject"
-          cat <<EOF > "$APP_PATH/CraneInject/Sanne.plist"
-          {
-              Filter = {
-                  Bundles = ( "com.mservice.com.vn.MoMoTransfer" );
-                  Mode = "Any";
-              };
-          }
-          EOF
-          
       - name: Repackaging
         run: |
-          cd temp && zip -qr ../SystemHealth_CRN.tipa Payload
+          cd temp && zip -qr ../SystemHealth_Senne_Final.tipa Payload
           
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SystemHealth-CRN-Pro
-          path: SystemHealth_CRN.tipa
-
-
-
+          name: SystemHealth-Senne-V2
+          path: SystemHealth_Senne_Final.tipa
