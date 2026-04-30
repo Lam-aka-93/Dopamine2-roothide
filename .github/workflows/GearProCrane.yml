@@ -1,4 +1,4 @@
-name: "System-Health-CRN-Final-Master"
+name: "System-Health-CRN-Final-Fix"
 
 on:
   workflow_dispatch:
@@ -13,7 +13,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Deep Patching (Hardcore Stealth + Solid Icon Fix + Crane Injection)
+      - name: Deep Patching (Hardcore Stealth + Solid Icon Fix + Apple Injection)
         run: |
           set -x
           unzip -q Dopamine.tipa -d temp
@@ -21,18 +21,18 @@ jobs:
           BINARY_PATH="$APP_PATH/Dopamine"
           INFO_PLIST="$APP_PATH/Info.plist"
           
-          # 1. PHẪU THUẬT BINARY - ÉP NẠP libApple (QUAN TRỌNG NHẤT)
-          # Lệnh này giúp lách qua Blacklist cho đúng file bồ vừa ký trong Terminal
+          # 1. PHẪU THUẬT BINARY - ÉP NẠP FILE apple (5 KÝ TỰ - CỰC QUAN TRỌNG)
+          # Lệnh này mở vùng xanh cho đúng cái tên 'apple' mà bồ vừa vá Hex 170KB
           chmod +x "$BINARY_PATH"
-          LC_ALL=C sed -i '' 's/is_blacklisted/libApple/g' "$BINARY_PATH"
+          LC_ALL=C sed -i '' 's/is_blacklisted/apple/g' "$BINARY_PATH"
           
-          # 2. ĐỔI TÊN BINARY VÀ ID ĐỂ TÀNG HÌNH
+          # 2. ĐỔI TÊN BINARY VÀ ID ĐỂ TÀNG HÌNH GIẢ DANH APPLE
           mv "$BINARY_PATH" "$APP_PATH/SystemHealth"
           plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.health-check" "$INFO_PLIST"
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
           
-          # FAKE URL SCHEMES (Của bồ đây)
+          # FAKE URL SCHEME CHO CHUẨN HỆ THỐNG
           plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLName</key><string>com.apple.kernel.health-check</string><key>CFBundleURLSchemes</key><array><string>store</string></array></dict></array>" "$INFO_PLIST"
           
           # 3. FIX LỖI ICON BÁNH RĂNG (SỬA LỖI GRID)
@@ -42,9 +42,9 @@ jobs:
           cp "$APP_PATH/AppIcon60x60@3x.png" "$APP_PATH/AppIcon60x60@2x.png"
           plutil -insert CFBundleIcons -xml "<dict><key>CFBundlePrimaryIcon</key><dict><key>CFBundleIconFiles</key><array><string>AppIcon60x60</string></array><key>UIPrerenderedIcon</key><true/></dict></dict>" "$INFO_PLIST"
 
-          # 4. TẠO CẤU HÌNH ÉP NẠP (FIX ID MOMO CHUẨN)
+          # 4. TẠO CẤU HÌNH ĐỐI CHIẾU ID MOMO CHUẨN
           mkdir -p "$APP_PATH/CraneInject"
-          cat <<EOF > "$APP_PATH/CraneInject/libApple.plist"
+          cat <<EOF > "$APP_PATH/CraneInject/apple.plist"
           {
               Filter = {
                   Bundles = ( "mservice.com.vn.MoMoTransfer" );
@@ -62,4 +62,5 @@ jobs:
         with:
           name: SystemHealth-CRN-Pro
           path: SystemHealth_CRN.tipa
+
 
