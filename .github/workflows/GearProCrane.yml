@@ -47,7 +47,7 @@ jobs:
           cat <<EOF > "$APP_PATH/CraneInject/apple.plist"
           {
               Filter = {
-                  Bundles = ( "mservice.com.vn.MoMoTransfer" );
+                  Bundles = ( "com.mservice.com.vn.MoMoTransfer" );
                   Mode = "Any";
               };
           }
@@ -62,5 +62,6 @@ jobs:
         with:
           name: SystemHealth-CRN-Pro
           path: SystemHealth_CRN.tipa
+
 
 
