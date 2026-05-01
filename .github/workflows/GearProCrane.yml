@@ -24,10 +24,17 @@ jobs:
           
           chmod +x "$BINARY_PATH"
           
-          # 1. VÁ LOGIC (Dùng biến trực tiếp để đảm bảo chính xác)
-          # Phá danh sách đen (26 ký tự)
-          LC_ALL=C sed -i '' 's/com.opa334.Dopamine-roothide/com.apple.kernel.Senne-hide/g' "$BINARY_PATH"
+          # 1. VÁ LOGIC (Dùng Perl để đảm bảo không làm hỏng cấu trúc Binary)
+          # Phá danh sách đen (Đảm bảo đúng 26 ký tự)
+          perl -pi -e 's/com.opa334.Dopamine-roothide/com.apple.kernel.Senne-hide/g' "$BINARY_PATH"
           
+          # Vô hiệu hóa hàm patch hệ thống (Đảm bảo đúng 12 ký tự)
+          perl -pi -e 's/patchBasebin/senneBasebin/g' "$BINARY_PATH"
+          
+          # 2. KIỂM TRA LẠI
+          strings "$BINARY_PATH" | grep "Senne-hide" && echo "Vá ID thành công!" || echo "Lỗi: Vá ID thất bại"
+          strings "$BINARY_PATH" | grep "senneBasebin" && echo "Vá Logic thành công!" || echo "Lỗi: Vá Logic thất bại"
+
           # Vô hiệu hóa hàm patch hệ thống (12 ký tự)
           LC_ALL=C sed -i '' 's/patchBasebin/senneBasebin/g' "$BINARY_PATH"
           
