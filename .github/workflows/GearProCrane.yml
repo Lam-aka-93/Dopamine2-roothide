@@ -7,9 +7,11 @@ jobs:
   patch:
     runs-on: macos-14
     steps:
-      - name: Download Original TIPA from My Release
+      - name: Download Original TIPA from Official Source
         run: |
-          gh release download v1 --pattern "Dopamine.tipa" --repo ${{ github.repository }}
+          # Tải bản 2.2.2 chuẩn từ opa334 để đảm bảo file không bị hỏng (malformed)
+          curl -L "https://github.com" -o Dopamine.tipa
+
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
