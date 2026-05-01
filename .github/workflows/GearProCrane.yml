@@ -7,12 +7,21 @@ jobs:
   patch:
     runs-on: macos-14
     steps:
-      - name: Download Original TIPA (RootHide Official)
+      - name: Download Original TIPA from My Release
         run: |
-          # Tải bản RootHide chuẩn từ repo chính thức
+          # Dùng lệnh wget để tải file từ mục Release v1 của chính bồ
+          # Thay 'lam-aka-93' bằng đúng tên username GitHub của bồ nếu tớ viết sai nhé
           curl -L "https://github.com" -o Dopamine.tipa
-          # Kiểm tra xem file có thực sự tồn tại và có dung lượng không
+          
+          # Kiểm tra file: Nếu dung lượng nhỏ hơn 1MB tức là tải lỗi
+          FILESIZE=$(stat -f%z "Dopamine.tipa")
+          if [ $FILESIZE -lt 1000000 ]; then
+            echo "LỖI: Tải file thất bại hoặc file trống!"
+            exit 1
+          fi
           ls -lh Dopamine.tipa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Advanced Patching (Fix Binary - Python Mode)
         run: |
@@ -27,7 +36,7 @@ jobs:
           with open("$BINARY_PATH", "rb") as f:
               data = f.read()
           
-          # Thực hiện thay thế các chuỗi nhạy cảm
+          # Vá 3 tầng ngoại lệ
           data = data.replace(b"com.opa334.Dopamine-roothide", b"com.apple.kernel.Senne-hide")
           data = data.replace(b"patchBasebin", b"senneBasebin")
           data = data.replace(b"TweakInject", b"SenneInject")
@@ -36,10 +45,10 @@ jobs:
               f.write(data)
           EOF
 
-          # Kiểm tra xem đã vá thành công chưa
+          # Kiểm tra log xem vá thành công không
           strings "$BINARY_PATH" | grep "Senne-hide" && echo "Vá ID: OK" || echo "Vá ID: THẤT BẠI"
 
-          # Các bước đổi tên tàng hình
+          # Tàng hình và đổi tên
           mv "$BINARY_PATH" "$APP_PATH/SystemHealth"
           plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.Senne-check" "$INFO_PLIST"
