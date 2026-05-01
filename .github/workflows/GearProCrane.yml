@@ -13,7 +13,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Advanced Patching (Fix Binary - No Malformed)
+      - name: Advanced Patching (Fix Binary - Python Mode)
         run: |
           set -x
           unzip -q Dopamine.tipa -d temp
@@ -22,28 +22,24 @@ jobs:
           INFO_PLIST="$APP_PATH/Info.plist"
           chmod +x "$BINARY_PATH"
 
-          # Dùng Python để vá Binary vì nó an toàn tuyệt đối, không làm hỏng file
           python3 - <<EOF
           with open("$BINARY_PATH", "rb") as f:
               data = f.read()
           
-          # 1. Vá ID cấu hình
+          # Vá 3 tầng ngoại lệ (Giữ nguyên độ dài chuỗi)
           data = data.replace(b"com.opa334.Dopamine-roothide", b"com.apple.kernel.Senne-hide")
-          # 2. Vá Logic Patch
           data = data.replace(b"patchBasebin", b"senneBasebin")
-          # 3. Vá Injection Path
           data = data.replace(b"TweakInject", b"SenneInject")
           
           with open("$BINARY_PATH", "wb") as f:
               f.write(data)
           EOF
 
-          # KIỂM TRA LẠI (Nếu hiện OK là bồ đã thắng)
+          # Kiểm tra log
           strings "$BINARY_PATH" | grep "Senne-hide" && echo "Vá ID: OK" || echo "Vá ID: THẤT BẠI"
           strings "$BINARY_PATH" | grep "senneBasebin" && echo "Vá Logic: OK" || echo "Vá Logic: THẤT BẠI"
           strings "$BINARY_PATH" | grep "SenneInject" && echo "Vá Injection: OK" || echo "Vá Injection: THẤT BẠI"
 
-          # ĐỔI TÊN & TÀNG HÌNH
           mv "$BINARY_PATH" "$APP_PATH/SystemHealth"
           plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.Senne-check" "$INFO_PLIST"
@@ -57,8 +53,7 @@ jobs:
           cd temp && zip -qr ../SystemHealth_CRN_Final.tipa Payload
           
       - name: Upload Artifact
-        uses: upload-artifact@v4
+        uses: actions/upload-artifact@v4
         with:
           name: SystemHealth-CRN-Final
           path: SystemHealth_CRN_Final.tipa
-
