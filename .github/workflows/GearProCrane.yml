@@ -9,12 +9,11 @@ jobs:
     steps:
       - name: Download Original TIPA from My Release
         run: |
-          # Tải từ đúng kho lưu trữ cá nhân của bồ
           gh release download v1 --pattern "Dopamine.tipa" --repo ${{ github.repository }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Advanced Patching (Senne Bypass Logic - Perl Fixed)
+      - name: Advanced Patching (Senne Ultimate Bypass - Fix Binary)
         run: |
           set -x
           unzip -q Dopamine.tipa -d temp
@@ -24,32 +23,33 @@ jobs:
           
           chmod +x "$BINARY_PATH"
           
-          # 1. VÁ LOGIC BẰNG PERL (Giữ nguyên cấu trúc Binary 100%)
-          # Chuỗi gốc: com.opa334.Dopamine-roothide (26 ký tự)
-          # Chuỗi mới: com.apple.kernel.Senne-hide (26 ký tự)
-          perl -pi -e 's/com\.opa334\.Dopamine-roothide/com\.apple\.kernel\.Senne-hide/g' "$BINARY_PATH"
+          # 1. PHÁ LÁ CHẮN (ID cấu hình - Giữ đúng 26 ký tự)
+          # Đổi 'com.opa334.Dopamine-roothide' -> 'com.apple.kernel.Senne-hide'
+          LC_ALL=C sed -i '' 's/com\.opa334\.Dopamine-roothide/com\.apple\.kernel\.Senne-hide/g' "$BINARY_PATH"
           
-          # Chuỗi gốc: patchBasebin (12 ký tự)
-          # Chuỗi mới: senneBasebin (12 ký tự)
-          perl -pi -e 's/patchBasebin/senneBasebin/g' "$BINARY_PATH"
+          # 2. VÔ HIỆU HÀM PATCH (Logic nạp - Giữ đúng 12 ký tự)
+          # Đổi 'patchBasebin' -> 'senneBasebin'
+          LC_ALL=C sed -i '' 's/patchBasebin/senneBasebin/g' "$BINARY_PATH"
           
-          # 2. KIỂM TRA (Nếu hiện ra chữ là thành công)
-          strings "$BINARY_PATH" | grep "Senne-hide" && echo "Vá ID OK" || echo "Vá ID hỏng"
-          strings "$BINARY_PATH" | grep "senneBasebin" && echo "Vá Logic OK" || echo "Vá Logic hỏng"
+          # 3. TẠO NGOẠI LỆ NẠP TWEAK (Tầng sâu - Giữ đúng 11 ký tự)
+          # Đổi 'TweakInject' -> 'SenneInject'
+          LC_ALL=C sed -i '' 's/TweakInject/SenneInject/g' "$BINARY_PATH"
+          
+          # 4. KIỂM TRA (Nếu Log hiện chữ 'OK' là bồ đã vá thành công)
+          strings "$BINARY_PATH" | grep "Senne-hide" && echo "Vá ID: OK" || echo "Vá ID: THẤT BẠI"
+          strings "$BINARY_PATH" | grep "senneBasebin" && echo "Vá Logic: OK" || echo "Vá Logic: THẤT BẠI"
+          strings "$BINARY_PATH" | grep "SenneInject" && echo "Vá Injection: OK" || echo "Vá Injection: THẤT BẠI"
 
-          # 3. ĐỔI TÊN VÀ TÀNG HÌNH (Giữ nguyên đoạn plutil của bồ)
+          # 5. TÀNG HÌNH BINARY & ĐỔI TÊN HỆ THỐNG
           mv "$BINARY_PATH" "$APP_PATH/SystemHealth"
           plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.Senne-check" "$INFO_PLIST"
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
-          # ... (các dòng plutil fake store và icon bồ giữ nguyên phía dưới nhé)
-
           
-          # 4. FAKE URL SCHEME & ICON
+          # 6. FAKE URL SCHEME & ICON BÁNH RĂNG
           plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLName</key><string>com.apple.kernel.Senne-check</string><key>CFBundleURLSchemes</key><array><string>store</string><string>itms-apps</string></array></dict></array>" "$INFO_PLIST"
           echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > "$APP_PATH/AppIcon60x60@3x.png"
           cp "$APP_PATH/AppIcon60x60@3x.png" "$APP_PATH/AppIcon60x60@2x.png"
-
 
       - name: Repackaging
         run: |
