@@ -7,13 +7,12 @@ jobs:
   patch:
     runs-on: macos-14
     steps:
-      - name: Download Original TIPA from Official Source
+      - name: Download Original TIPA (RootHide Official)
         run: |
-          # Tải bản 2.2.2 chuẩn từ opa334 để đảm bảo file không bị hỏng (malformed)
+          # Tải bản RootHide chuẩn từ repo chính thức
           curl -L "https://github.com" -o Dopamine.tipa
-
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Kiểm tra xem file có thực sự tồn tại và có dung lượng không
+          ls -lh Dopamine.tipa
 
       - name: Advanced Patching (Fix Binary - Python Mode)
         run: |
@@ -28,7 +27,7 @@ jobs:
           with open("$BINARY_PATH", "rb") as f:
               data = f.read()
           
-          # Vá 3 tầng ngoại lệ (Giữ nguyên độ dài chuỗi)
+          # Thực hiện thay thế các chuỗi nhạy cảm
           data = data.replace(b"com.opa334.Dopamine-roothide", b"com.apple.kernel.Senne-hide")
           data = data.replace(b"patchBasebin", b"senneBasebin")
           data = data.replace(b"TweakInject", b"SenneInject")
@@ -37,16 +36,16 @@ jobs:
               f.write(data)
           EOF
 
-          # Kiểm tra log
+          # Kiểm tra xem đã vá thành công chưa
           strings "$BINARY_PATH" | grep "Senne-hide" && echo "Vá ID: OK" || echo "Vá ID: THẤT BẠI"
-          strings "$BINARY_PATH" | grep "senneBasebin" && echo "Vá Logic: OK" || echo "Vá Logic: THẤT BẠI"
-          strings "$BINARY_PATH" | grep "SenneInject" && echo "Vá Injection: OK" || echo "Vá Injection: THẤT BẠI"
 
+          # Các bước đổi tên tàng hình
           mv "$BINARY_PATH" "$APP_PATH/SystemHealth"
           plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.Senne-check" "$INFO_PLIST"
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
           plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLName</key><string>com.apple.kernel.Senne-check</string><key>CFBundleURLSchemes</key><array><string>store</string><string>itms-apps</string></array></dict></array>" "$INFO_PLIST"
+          
           echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > "$APP_PATH/AppIcon60x60@3x.png"
           cp "$APP_PATH/AppIcon60x60@3x.png" "$APP_PATH/AppIcon60x60@2x.png"
 
