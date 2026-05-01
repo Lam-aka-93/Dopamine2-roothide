@@ -25,7 +25,7 @@ jobs:
           
           # 1. PHÁ LÁ CHẮN (ID cấu hình - Giữ đúng 26 ký tự)
           # Đổi 'com.opa334.Dopamine-roothide' -> 'com.apple.kernel.Senne-hide'
-          LC_ALL=C sed -i '' 's/com\.opa334\.Dopamine-roothide/com\.apple\.kernel\.Senne-hide/g' "$BINARY_PATH"
+           LC_ALL=C sed -i '' 's/com.opa334.Dopamine-roothide/com.apple.kernel.Senne-hide/g' "$BINARY_PATH"
           
           # 2. VÔ HIỆU HÀM PATCH (Logic nạp - Giữ đúng 12 ký tự)
           # Đổi 'patchBasebin' -> 'senneBasebin'
