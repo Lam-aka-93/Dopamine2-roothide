@@ -7,51 +7,51 @@ jobs:
   patch:
     runs-on: macos-14
     steps:
-      - name: Download Clean TIPA from My Release
+      - name: Download Original TIPA from My Release
         run: |
-          # Tải bản sạch bồ vừa up lên Release v1
           gh release download v1 --pattern "Dopamine.tipa" --repo ${{ github.repository }}
-          ls -lh Dopamine.tipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Advanced Patching (Fix Binary - Ditto Mode)
+      - name: Advanced Patching (Python Final Solution)
         run: |
           set -x
-          # Dùng ditto để giải nén giúp giữ nguyên cấu trúc symlink và quyền hạn file
-          mkdir temp
-          ditto -xk Dopamine.tipa temp
-          
+          unzip -q Dopamine.tipa -d temp
           APP_PATH=$(find temp/Payload -name "*.app" -type d | head -n 1)
           BINARY_PATH="$APP_PATH/Dopamine"
           INFO_PLIST="$APP_PATH/Info.plist"
           chmod +x "$BINARY_PATH"
 
-          # Phẫu thuật bằng Python trên file đã được giải nén đúng cách
+          # Dùng Python xử lý Binary ở tầng thấp, cực kỳ an toàn
           python3 - <<EOF
+          import os
           with open("$BINARY_PATH", "rb") as f:
               data = f.read()
-          data = data.replace(b"com.opa334.Dopamine-roothide", b"com.apple.kernel.Senne-hide")
-          data = data.replace(b"patchBasebin", b"senneBasebin")
-          data = data.replace(b"TweakInject", b"SenneInject")
+          
+          # Danh sách các chuỗi cần tráo (Giữ nguyên độ dài)
+          targets = {
+              b"com.opa334.Dopamine-roothide": b"com.apple.kernel.Senne-hide",
+              b"patchBasebin": b"senneBasebin",
+              b"TweakInject": b"SenneInject"
+          }
+          
+          for target, replacement in targets.items():
+              if target in data:
+                  data = data.replace(target, replacement)
+                  print(f"Da va thanh cong: {target.decode()}")
+              else:
+                  print(f"Khong tim thay: {target.decode()}")
+          
           with open("$BINARY_PATH", "wb") as f:
               f.write(data)
           EOF
 
-          # Kiểm tra lại - Lần này ditto đã cứu file, strings sẽ đọc được
-          strings "$BINARY_PATH" | grep "Senne-hide" && echo "Vá ID: OK" || echo "Vá ID: THẤT BẠI"
-          
-          # Tàng hình và đổi tên
+          # Đổi tên và tàng hình
           mv "$BINARY_PATH" "$APP_PATH/SystemHealth"
           plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.Senne-check" "$INFO_PLIST"
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
-
-          
-          # Fake Store URL & Icon
           plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLName</key><string>com.apple.kernel.Senne-check</string><key>CFBundleURLSchemes</key><array><string>store</string><string>itms-apps</string></array></dict></array>" "$INFO_PLIST"
-          echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > "$APP_PATH/AppIcon60x60@3x.png"
-          cp "$APP_PATH/AppIcon60x60@3x.png" "$APP_PATH/AppIcon60x60@2x.png"
 
       - name: Repackaging
         run: |
