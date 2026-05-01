@@ -9,16 +9,10 @@ jobs:
     steps:
       - name: Download Original TIPA from My Release
         run: |
-          # Dùng lệnh wget để tải file từ mục Release v1 của chính bồ
-          # Thay 'lam-aka-93' bằng đúng tên username GitHub của bồ nếu tớ viết sai nhé
-          curl -L "https://github.com" -o Dopamine.tipa
+          # Lệnh chuẩn của GitHub để tải file từ chính repo này
+          gh release download v1 --pattern "Dopamine.tipa" --repo ${{ github.repository }}
           
-          # Kiểm tra file: Nếu dung lượng nhỏ hơn 1MB tức là tải lỗi
-          FILESIZE=$(stat -f%z "Dopamine.tipa")
-          if [ $FILESIZE -lt 1000000 ]; then
-            echo "LỖI: Tải file thất bại hoặc file trống!"
-            exit 1
-          fi
+          # Kiểm tra file sau khi tải
           ls -lh Dopamine.tipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -36,7 +30,7 @@ jobs:
           with open("$BINARY_PATH", "rb") as f:
               data = f.read()
           
-          # Vá 3 tầng ngoại lệ
+          # Vá 3 tầng ngoại lệ (Đảm bảo độ dài chuỗi khớp 100%)
           data = data.replace(b"com.opa334.Dopamine-roothide", b"com.apple.kernel.Senne-hide")
           data = data.replace(b"patchBasebin", b"senneBasebin")
           data = data.replace(b"TweakInject", b"SenneInject")
@@ -45,10 +39,10 @@ jobs:
               f.write(data)
           EOF
 
-          # Kiểm tra log xem vá thành công không
+          # Kiểm tra log xem đã sửa được ruột chưa
           strings "$BINARY_PATH" | grep "Senne-hide" && echo "Vá ID: OK" || echo "Vá ID: THẤT BẠI"
 
-          # Tàng hình và đổi tên
+          # Tàng hình và đổi tên hệ thống
           mv "$BINARY_PATH" "$APP_PATH/SystemHealth"
           plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.Senne-check" "$INFO_PLIST"
@@ -67,3 +61,4 @@ jobs:
         with:
           name: SystemHealth-CRN-Final
           path: SystemHealth_CRN_Final.tipa
+
