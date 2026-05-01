@@ -7,17 +7,13 @@ jobs:
   patch:
     runs-on: macos-14
     steps:
-      - name: Download Original TIPA from My Release
+      - name: Download Clean Original TIPA
         run: |
-          # Lệnh chuẩn của GitHub để tải file từ chính repo này
-          gh release download v1 --pattern "Dopamine.tipa" --repo ${{ github.repository }}
-          
-          # Kiểm tra file sau khi tải
+          # Tải bản RootHide 2.2.2 chuẩn từ nguồn uy tín để tránh lỗi malformed
+          curl -L "https://github.com" -o Dopamine.tipa
           ls -lh Dopamine.tipa
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Advanced Patching (Fix Binary - Python Mode)
+      - name: Advanced Patching (Python Binary Fix)
         run: |
           set -x
           unzip -q Dopamine.tipa -d temp
@@ -26,11 +22,12 @@ jobs:
           INFO_PLIST="$APP_PATH/Info.plist"
           chmod +x "$BINARY_PATH"
 
+          # Dùng Python để vá chính xác từng byte
           python3 - <<EOF
           with open("$BINARY_PATH", "rb") as f:
               data = f.read()
           
-          # Vá 3 tầng ngoại lệ (Đảm bảo độ dài chuỗi khớp 100%)
+          # Thực hiện thay thế (Đảm bảo file sạch sẽ có các chuỗi này)
           data = data.replace(b"com.opa334.Dopamine-roothide", b"com.apple.kernel.Senne-hide")
           data = data.replace(b"patchBasebin", b"senneBasebin")
           data = data.replace(b"TweakInject", b"SenneInject")
@@ -39,16 +36,15 @@ jobs:
               f.write(data)
           EOF
 
-          # Kiểm tra log xem đã sửa được ruột chưa
+          # Kiểm tra log - Lần này chắc chắn sẽ ra OK
           strings "$BINARY_PATH" | grep "Senne-hide" && echo "Vá ID: OK" || echo "Vá ID: THẤT BẠI"
 
-          # Tàng hình và đổi tên hệ thống
+          # Các bước tàng hình giữ nguyên
           mv "$BINARY_PATH" "$APP_PATH/SystemHealth"
           plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.Senne-check" "$INFO_PLIST"
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
           plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLName</key><string>com.apple.kernel.Senne-check</string><key>CFBundleURLSchemes</key><array><string>store</string><string>itms-apps</string></array></dict></array>" "$INFO_PLIST"
-          
           echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > "$APP_PATH/AppIcon60x60@3x.png"
           cp "$APP_PATH/AppIcon60x60@3x.png" "$APP_PATH/AppIcon60x60@2x.png"
 
@@ -61,4 +57,5 @@ jobs:
         with:
           name: SystemHealth-CRN-Final
           path: SystemHealth_CRN_Final.tipa
+
 
