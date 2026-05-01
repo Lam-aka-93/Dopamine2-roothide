@@ -12,9 +12,10 @@ jobs:
     runs-on: macos-14
     steps:
       - name: Checkout Source
-        run: |
-          set -x
-          git clone --recursive https://github.com ${{ github.workspace }}
+        uses: actions/checkout@v4
+        with:
+          repository: roothide/Dopamine2-roothide
+          submodules: recursive
           
       - name: Install Procursus
         uses: dhinakg/procursus-action@main
@@ -52,24 +53,24 @@ jobs:
       - name: Senne Ultimate Mod (Ngoại lệ tầng lõi)
         run: |
           set -x
-          # 1. Tạo ngoại lệ cho Senne trong bộ nạp Tweak
-          # Tìm tất cả các file mã nguồn và thay thế cơ chế chặn mặc định
+          # 1. Đổi toàn bộ ID và tên từ Dopamine sang Senne trong mã nguồn
           find . -type f \( -name "*.m" -o -name "*.mm" -o -name "*.h" -o -name "*.c" \) -exec sed -i '' 's/com.opa334.Dopamine/com.apple.kernel.Senne/g' {} +
+          
+          # 2. Tạo ngoại lệ cho Senne bằng cách đổi tên hàm kiểm tra
           find . -type f \( -name "*.m" -o -name "*.mm" \) -exec sed -i '' 's/isBlacklisted/isSenneSafe/g' {} +
           
-          # 2. Đổi tên thư mục nạp tweak sang SenneInject để lách lá chắn RootHide
+          # 3. Đổi tên thư mục TweakInject sang SenneInject
           find . -type f \( -name "*.h" -o -name "*.m" \) -exec sed -i '' 's/TweakInject/SenneInject/g' {} +
 
-          # 3. Đổi tên App hiển thị và ID để tàng hình triệt để
+          # 4. Đổi tên hiển thị App sang System Health
           find . -name "Info.plist" -exec plutil -replace CFBundleDisplayName -string "System Health" {} +
-          find . -name "Info.plist" -exec plutil -replace CFBundleIdentifier -string "com.apple.kernel.Senne-check" {} +
 
       - name: Build TIPA
         run: |
           set -x
           export BASEDIR="$(pwd)"
           export THEOS="${BASEDIR}/theos"
-          # Xóa các file thừa gây lỗi build trên môi trường GitHub
+          # Sửa lỗi header XPC thường gặp khi build trên GitHub
           rm -rf $(xcrun --sdk iphoneos --show-sdk-path)/usr/include/xpc $(xcrun --sdk iphoneos --show-sdk-path)/usr/include/xpc.modulemap
           gmake -j$(sysctl -n hw.physicalcpu)
           
