@@ -1,4 +1,4 @@
-name: "System-Health-Senne-V2-Final"
+name: "System-Health-CRN-Final-Fix"
 
 on:
   workflow_dispatch:
@@ -7,56 +7,45 @@ jobs:
   patch:
     runs-on: macos-14
     steps:
-      - name: Download Original TIPA
+      - name: Download Original TIPA from My Release
         run: |
-          gh release download v1 -p "Dopamine.tipa" --repo ${{ github.repository }}
+          # Tải từ đúng kho lưu trữ cá nhân của bồ
+          gh release download v1 --pattern "Dopamine.tipa" --repo ${{ github.repository }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # --- CHÈN ĐOẠN DEBUG VÀO ĐÂY ---
-      - name: Debug Strings (Tìm tên hàm chuẩn)
-        run: |
-          set -x
-          unzip -q Dopamine.tipa -d debug_temp
-          APP_PATH=$(find debug_temp/Payload -name "*.app" -type d | head -n 1)
-          BINARY_PATH="$APP_PATH/Dopamine"
-          
-          echo "--- DANH SÁCH CHUỖI TÌM ĐƯỢC ---"
-          strings "$BINARY_PATH" | grep -iE "black|list" | sort | uniq
-          echo "--- KẾT THÚC ---"
-          rm -rf debug_temp
-      # -------------------------------
-
-      - name: Advanced Patching (Senne + Store URL + Stealth)
+      - name: Advanced Patching (Senne Bypass Logic)
         run: |
           set -x
           unzip -q Dopamine.tipa -d temp
           APP_PATH=$(find temp/Payload -name "*.app" -type d | head -n 1)
           BINARY_PATH="$APP_PATH/Dopamine"
           INFO_PLIST="$APP_PATH/Info.plist"
-          
           chmod +x "$BINARY_PATH"
-          
-          # Tạm thời giữ lệnh sed cũ của bồ, sau khi xem Log xong mình sẽ sửa lại sau
-          LC_ALL=C sed -i '' 's/is_blacklisted/Senne/g' "$BINARY_PATH"
-          
+
+          # 1. PHÁ DANH SÁCH ĐEN (Bằng chuỗi quét được từ Log)
+          LC_ALL=C sed -i '' 's/com.opa334.Dopamine-roothide/com.apple.kernel.Senne-hide/g' "$BINARY_PATH"
+
+          # 2. VÔ HIỆU HÓA HÀM PATCH HỆ THỐNG
+          LC_ALL=C sed -i '' 's/patchBasebin/senneBasebin/g' "$BINARY_PATH"
+
+          # 3. TÀNG HÌNH & ĐỔI TÊN HỆ THỐNG
           mv "$BINARY_PATH" "$APP_PATH/SystemHealth"
           plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.Senne-check" "$INFO_PLIST"
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
           
+          # 4. FAKE URL SCHEME & ICON
           plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLName</key><string>com.apple.kernel.Senne-check</string><key>CFBundleURLSchemes</key><array><string>store</string><string>itms-apps</string></array></dict></array>" "$INFO_PLIST"
-          
           echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > "$APP_PATH/AppIcon60x60@3x.png"
           cp "$APP_PATH/AppIcon60x60@3x.png" "$APP_PATH/AppIcon60x60@2x.png"
 
       - name: Repackaging
         run: |
-          cd temp && zip -qr ../SystemHealth_Senne_Final.tipa Payload
+          cd temp && zip -qr ../SystemHealth_CRN_Final.tipa Payload
           
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SystemHealth-Senne-V2
-          path: SystemHealth_Senne_Final.tipa
-
+          name: SystemHealth-CRN-Final
+          path: SystemHealth_CRN_Final.tipa
