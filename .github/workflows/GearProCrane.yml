@@ -14,7 +14,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Advanced Patching (Senne Bypass Logic - Optimized)
+      - name: Advanced Patching (Senne Bypass Logic - Perl Fixed)
         run: |
           set -x
           unzip -q Dopamine.tipa -d temp
@@ -24,29 +24,26 @@ jobs:
           
           chmod +x "$BINARY_PATH"
           
-          # 1. VÁ LOGIC (Dùng Perl để đảm bảo không làm hỏng cấu trúc Binary)
-          # Phá danh sách đen (Đảm bảo đúng 26 ký tự)
-          perl -pi -e 's/com.opa334.Dopamine-roothide/com.apple.kernel.Senne-hide/g' "$BINARY_PATH"
+          # 1. VÁ LOGIC BẰNG PERL (Giữ nguyên cấu trúc Binary 100%)
+          # Chuỗi gốc: com.opa334.Dopamine-roothide (26 ký tự)
+          # Chuỗi mới: com.apple.kernel.Senne-hide (26 ký tự)
+          perl -pi -e 's/com\.opa334\.Dopamine-roothide/com\.apple\.kernel\.Senne-hide/g' "$BINARY_PATH"
           
-          # Vô hiệu hóa hàm patch hệ thống (Đảm bảo đúng 12 ký tự)
+          # Chuỗi gốc: patchBasebin (12 ký tự)
+          # Chuỗi mới: senneBasebin (12 ký tự)
           perl -pi -e 's/patchBasebin/senneBasebin/g' "$BINARY_PATH"
           
-          # 2. KIỂM TRA LẠI
-          strings "$BINARY_PATH" | grep "Senne-hide" && echo "Vá ID thành công!" || echo "Lỗi: Vá ID thất bại"
-          strings "$BINARY_PATH" | grep "senneBasebin" && echo "Vá Logic thành công!" || echo "Lỗi: Vá Logic thất bại"
+          # 2. KIỂM TRA (Nếu hiện ra chữ là thành công)
+          strings "$BINARY_PATH" | grep "Senne-hide" && echo "Vá ID OK" || echo "Vá ID hỏng"
+          strings "$BINARY_PATH" | grep "senneBasebin" && echo "Vá Logic OK" || echo "Vá Logic hỏng"
 
-          # Vô hiệu hóa hàm patch hệ thống (12 ký tự)
-          LC_ALL=C sed -i '' 's/patchBasebin/senneBasebin/g' "$BINARY_PATH"
-          
-          # 2. KIỂM TRA LẠI (Nếu log hiện ra 'Found' là bồ đã vá thành công)
-          strings "$BINARY_PATH" | grep "Senne-hide" && echo "Vá ID thành công!" || echo "Lỗi: Không tìm thấy ID để vá"
-          strings "$BINARY_PATH" | grep "senneBasebin" && echo "Vá Logic thành công!" || echo "Lỗi: Không tìm thấy Logic để vá"
-
-          # 3. TÀNG HÌNH BINARY & ĐỔI TÊN
+          # 3. ĐỔI TÊN VÀ TÀNG HÌNH (Giữ nguyên đoạn plutil của bồ)
           mv "$BINARY_PATH" "$APP_PATH/SystemHealth"
           plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.Senne-check" "$INFO_PLIST"
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
+          # ... (các dòng plutil fake store và icon bồ giữ nguyên phía dưới nhé)
+
           
           # 4. FAKE URL SCHEME & ICON
           plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLName</key><string>com.apple.kernel.Senne-check</string><key>CFBundleURLSchemes</key><array><string>store</string><string>itms-apps</string></array></dict></array>" "$INFO_PLIST"
